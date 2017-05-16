@@ -13,8 +13,12 @@ function fibonacci(n) {
 
 app.get('/fibonacci', (req, res) => {
   request('http://authentication-service/auth?token=' + req.query.token, (error, response) => {
+    if (error || response.statusCode !== 200) {
+      return res.status(response.statusCode).send(error || 'Unable to complete request');
+    }
+
     const result = fibonacci(40);
-    res.status(response.statusCode).send({ result }).end();
+    res.status(200).send({ result }).end();
   });
 });
 

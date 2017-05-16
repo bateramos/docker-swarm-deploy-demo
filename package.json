@@ -4,11 +4,12 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "test",
+    "test": "test"
   },
   "author": "pedrodevop@gmail.com",
   "license": "MIT",
   "dependencies": {
+    "async": "^2.4.0",
     "body-parser": "^1.17.1",
     "express": "^4.15.2",
     "request": "^2.81.0"
