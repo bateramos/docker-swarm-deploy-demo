@@ -2,14 +2,29 @@ const map = require('async/map');
 const exec = require('child_process').exec;
 
 let services = [];
+let workers = [];
 
-reloadServiceInfo(() => {
-  handleServicesInstances();
-  handleStats();
+getWorkers(() => {
+  reloadServiceInfo(() => {
+    handleServicesInstances();
+    handleStats();
+  });
 });
 
+getWorkers();
+
+function getWorkers(callback = () => {}) {
+  exec('curl --unix-socket /var/run/docker.sock -X GET http:/v1.28/nodes', (error, data, info) => {
+    workers = JSON.parse(data).map(s => ({
+      id : s.ID, name : s.Description.Hostname,
+      status : s.Status.State,
+    })).filter(nodes => nodes.status === 'ready' && nodes.name !== 'moby');
+    callback();
+  });
+}
+
 function reloadServiceInfo(callback = () => {}) {
-  exec('curl --unix-socket /var/run/docker.sock -X GET http:/v1.24/services', (error, data, info) => {
+  exec('curl --unix-socket /var/run/docker.sock -X GET http:/v1.28/services', (error, data, info) => {
     services = JSON.parse(data).map(s => ({
       id : s.ID, name : s.Spec.Name,
       replicas : s.Spec.Mode.Replicated.Replicas,
@@ -19,9 +34,9 @@ function reloadServiceInfo(callback = () => {}) {
 }
 
 function handleServicesInstances() {
-  map(['docker exec -i worker-1 curl --unix-socket /var/run/docker.sock -X GET http:/v1.24/containers/json',
-    'curl --unix-socket /var/run/docker.sock -X GET http:/v1.24/containers/json'],
-    (command, cb) => {
+  const commands = ['curl --unix-socket /var/run/docker.sock -X GET http:/v1.28/containers/json',
+    ...workers.map(node => `docker exec -i ${node.name} curl --unix-socket /var/run/docker.sock -X GET http:/v1.28/containers/json`)]
+  map(commands, (command, cb) => {
       exec(command, (error, data, info) => {
         cb(error, JSON.parse(data));
       })
@@ -63,8 +78,10 @@ function scaleUpService(service, callback = () => {}) {
 }
 
 function handleStats() {
-  map(['docker stats --no-stream', 'docker exec -i worker-1 docker stats --no-stream'],
-    (command, cb) => {
+  const commands = ['docker stats --no-stream',
+    ...workers.map(node => `docker exec -i ${node.name} docker stats --no-stream`)]
+
+  map(commands, (command, cb) => {
       exec(command, (error, data, info) => {
         const serviceInfo = data.split('\n')
           .filter((l, i) => i > 0)
@@ -89,7 +106,7 @@ function handleStats() {
           })
         });
 
-      const toRemove = services
+      const serviceToRemove = services
         .filter(s => s.instances)
         .filter(s => !s.lastPreScaleCount || s.lastPreScaleCount != s.instances.length)
         .filter(s => s.instances && s.instances.length > 1)
@@ -112,8 +129,8 @@ function handleStats() {
         scaleUpService(serviceToScale.service);
       }
 
-      if (toRemove) {
-        scaleDownService(toRemove.service);
+      if (serviceToRemove) {
+        scaleDownService(serviceToRemove.service);
       }
 
       setTimeout(handleStats, 1000);

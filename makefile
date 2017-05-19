@@ -21,7 +21,7 @@ start-router:
 stop-router:
 	docker service rm router
 
-run-benchmak:
+run-stress-test:
 	ab -k -c 10 -n 500 0.0.0.0/fibonacci?token=asdfas
 
 start-worker:
