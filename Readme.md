@@ -1,10 +1,8 @@
-# Project Title
-
-Docker Swarm Deploy Demo
+# Docker Swarm Faas deploy demo
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
 ### Prerequisites
 
@@ -26,25 +24,26 @@ docker run -d --privileged --name worker-1 --hostname=worker-1 -p 12375:2375 doc
 docker --host=localhost:12375 swarm join --token $(docker swarm join-token -q worker) $(docker info | grep -w 'Node Address' | awk '{print $3}'):2377
 ```
 Now on the root of this project.
-To create an overlay network so all your service can see each other.
+You need to create an overlay network so all your service can see each other.
 
 ```
 make create-overlay
 ```
 
-This creates a image with NGINX with the service that will be expose mapped.
+This creates a image with NGINX with the services that will be expose from the overlay network.
 
 ```
 make create-router
 ```
 
-For the sake of this example, I already created a public Image for this service. To deploy the service just run.
+For the sake of this example, I already created a public Image for this service. I did this because the workers cannot see the images that you have registered in your local machine Docker (the master in the Swarm). To deploy the service just run:
+[Click here to now more about Image Registry](RegistringImages.md)
 
 ```
 make start-swarm
 ```
 
-Now we can start the router. If you start the router before the services, NGINX will not be able to resolve the hosts and will stop it's startup.
+Now we can start the router. If you start the router before the services NGINX will not be able to resolve the hosts and will stop it's startup.
 
 ```
 make start-router
