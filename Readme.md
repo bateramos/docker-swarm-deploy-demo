@@ -17,7 +17,7 @@ docker swarm init
 ```
 
 This will create a new Worker Node in your swarm that will receive some instances of your service.
-You can deploy more then one worker by changing the name, hostname and the exposed port (->12375:2375)
+You can deploy more than one worker by changing the name, hostname and the exposed port (->12375:2375)
 
 ```
 docker run -d --privileged --name worker-1 --hostname=worker-1 -p 12375:2375 docker:dind
@@ -50,6 +50,8 @@ make start-router
 ```
 
 Let's also start the Docker Swarm Visualizer so we can see if the services are being distributed correctly.
+
+http://localhost:8080 to access it.
 
 ```
 make start-visualizer
