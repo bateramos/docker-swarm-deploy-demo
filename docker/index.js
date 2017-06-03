@@ -11,8 +11,6 @@ getWorkers(() => {
   });
 });
 
-getWorkers();
-
 function getWorkers(callback = () => {}) {
   exec('curl --unix-socket /var/run/docker.sock -X GET http:/v1.28/nodes', (error, data, info) => {
     workers = JSON.parse(data).map(s => ({
