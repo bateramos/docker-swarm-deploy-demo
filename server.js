@@ -2,6 +2,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const request = require('request');
 
+const service = require('./api/services');
+const InternalError = require('./error/InternalError');
+
 const app = express();
 app.use(bodyParser.json());
 
@@ -12,14 +15,20 @@ function fibonacci(n) {
 }
 
 app.get('/fibonacci', (req, res) => {
-  request('http://authentication-service/auth?token=' + req.query.token, (error, response) => {
-    if (error || response.statusCode !== 200) {
-      return res.status(response.statusCode).send(error || 'Unable to complete request');
-    }
-
-    const result = fibonacci(40);
-    res.status(200).send({ result }).end();
-  });
+  service('authentication')
+    .auth(req.query.token)
+    .then((response) => {
+      if (response.statusCode !== 200) {
+        throw new InternalError('', response.statusCode);
+      }
+    })
+    .then(() => {
+      const result = fibonacci(40);
+      res.status(200).send({ result }).end();
+    })
+    .catch(error => {
+      res.status(error.statusCode || 400).send(error.message || 'Unable to complete request');
+    });
 });
 
 app.get('/auth', (req, res) => {
